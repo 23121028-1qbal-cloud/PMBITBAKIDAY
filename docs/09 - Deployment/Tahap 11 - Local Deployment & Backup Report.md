@@ -402,6 +402,36 @@ tidak dapat diselesaikan pada lingkungan ini tanpa keputusan pemilik proyek.
 
 ---
 
+## 12. Addendum — Cutover MySQL dan Inisialisasi Git (29 Oktober 2026)
+
+Bagian 1–11 di atas **tetap** menggambarkan kondisi Tahap 11 sebagaimana adanya:
+runtime saat itu memakai SQLite dan root proyek belum menjadi repository Git.
+Bagian ini mencatat perubahan setelahnya tanpa menulis ulang riwayat tersebut.
+
+**Keputusan pemilik proyek:** database resmi adalah MySQL, dan root proyek
+dijadikan satu repository Git.
+
+Yang berubah:
+
+1. Database lokal diganti dari MariaDB 11.8 ke image resmi **MySQL 8.4.13**
+   (dipin) dengan named volume baru `pmb_mysql8_data`. Volume MariaDB lama
+   `pmb_mysql_data` **tidak dihapus** dan instance-nya dipertahankan pada profile
+   `legacy-mariadb`.
+2. Data dipindahkan dari SQLite ke MySQL dengan
+   `scripts/migrate-sqlite-to-mysql.php`: 17 tabel, jumlah baris identik, nilai
+   kolom identik, relasi dan indeks unik utuh, 7 referensi dokumen tersedia.
+3. `backend-api/.env` sekarang memakai `DB_CONNECTION=mysql`. File SQLite tetap
+   disimpan sebagai jalur rollback dan tidak dilacak Git.
+4. Root proyek diinisialisasi sebagai repository Git (`main`) dengan baseline
+   commit; belum ada remote.
+5. Seluruh test suite dijalankan ulang di atas MySQL: backend 50/50, admin-web
+   10/10 + typecheck + build, Android 42/42 (termasuk 2 test live) + APK, serta
+   28/28 skenario integrasi. Backup dan restore terisolasi juga lulus pada MySQL.
+
+Kriteria yang sebelumnya berstatus `NEEDS DECISION` (runtime MySQL) kini
+terpenuhi. Kriteria `NOT RUN` (instrumented test Android) masih `NOT RUN` karena
+tidak ada perangkat/emulator.
+
 ## 11. Rekomendasi Tahap 12
 
 1. **Tetapkan keputusan cutover database lebih dulu.** Release notes dan

@@ -40,22 +40,25 @@ Sistem PMB ITB Akiday direncanakan menggunakan beberapa lingkungan berikut.
 
 - Satu root workspace berisi `android-app/`, `backend-api/`, `admin-web/`, dan
   `docs/`. Proyek Android **sudah** berada di `android-app/`, bukan di root.
-- Root workspace **bukan** repository Git (`.git` tidak tersedia). Riwayat versi,
-  branch, dan remote tidak dapat diperiksa. Jangan menginisialisasi Git atau
-  membuat repository baru tanpa keputusan pemilik proyek.
+- Root workspace adalah **satu repository Git** (`main`) yang mencakup
+  `android-app/`, `backend-api/`, `admin-web/`, dan `docs/`. Baseline commit sudah
+  dibuat; **belum ada remote** dan belum ada yang di-push. Periksa status dengan
+  `git status` dan riwayat dengan `git log --oneline`.
 - `backend-api/`: Laravel 13.39.0 dengan PHP 8.4.24 dan Composer 2.10.3. Runtime
-  lokal memakai **SQLite** (`DB_CONNECTION=sqlite`,
-  `backend-api/database/database.sqlite`). Driver `mysql`/`mariadb` tersedia dan
-  ekstensi `pdo_mysql` aktif, tetapi pemindahan data live ke MySQL/MariaDB
-  **belum** dilakukan.
+  lokal memakai **MySQL 8.4.13** (`DB_CONNECTION=mysql`) di container Docker.
+  Sebelum cutover, runtime memakai SQLite; file SQLite lama tetap disimpan di
+  `backend-api/database/database.sqlite` sebagai jalur rollback dan tidak
+  dilacak Git.
 - `admin-web/`: React 18 + TypeScript 5.6 + Vite 5, dependency terpasang dari
   `package-lock.json`. Base URL API diambil dari `VITE_API_BASE_URL` (default
   `/api/v1`) dan proxy dev mengarah ke `http://127.0.0.1:8000`.
-- Database MySQL/MariaDB lokal disediakan melalui `docker-compose.yml`
-  (MariaDB 11.8, `127.0.0.1:3307`, named volume `pmb_mysql_data`). Karena Laravel
-  berjalan di host, `DB_HOST=127.0.0.1` dan `DB_PORT` mengikuti port publikasi
-  container. Nilai di dalam container berbeda: `localhost` menunjuk container itu
-  sendiri.
+- Database lokal disediakan melalui `docker-compose.yml`: service `db` memakai
+  image resmi `mysql:8.4.13` (versi dipin), port `127.0.0.1:3306`, named volume
+  `pmb_mysql8_data`. Karena Laravel berjalan di host, `DB_HOST=127.0.0.1` dan
+  `DB_PORT=3306`. Di dalam container, `localhost` menunjuk container itu sendiri;
+  service `db` dan port `3306` hanya dipakai bila Laravel ikut dalam jaringan
+  Docker. Instance MariaDB Tahap 11 dipertahankan sebagai profile
+  `legacy-mariadb` dengan volume terpisah `pmb_mysql_data`.
 - Dokumen privat tersimpan pada disk `local` di
   `backend-api/storage/app/private/documents/<application_id>/` dan hanya dapat
   diunduh melalui endpoint terotorisasi. Akses langsung ke `/storage/...`

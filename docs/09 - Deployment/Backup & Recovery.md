@@ -187,6 +187,14 @@ Jika dokumen berubah ketika backup berlangsung, gunakan prosedur snapshot atau m
 Prosedur berikut sudah dijalankan pada lingkungan lokal; hasil dan angkanya
 dicatat pada [[Tahap 11 - Local Deployment & Backup Report]].
 
+### 7A.0 Driver yang aktif
+
+Sejak cutover 29 Oktober 2026, database aplikasi adalah **MySQL 8.4.13** di
+container Docker, sehingga `scripts/backup.sh` menghasilkan `database.sql`
+(dump `mysqldump`) dan verifikasi restore membuat database scratch MySQL.
+Prosedur SQLite di atas tetap relevan selama file SQLite lama dipakai sebagai
+jalur rollback.
+
 ### 7A.1 Membuat backup
 
 ```

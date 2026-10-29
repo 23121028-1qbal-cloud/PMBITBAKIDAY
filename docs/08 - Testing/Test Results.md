@@ -239,3 +239,28 @@ diperbaiki (skema tidak diubah).
 **Catatan angka:** jumlah test backend naik dari 48 menjadi 50 karena dua test
 validasi unggah dokumen ditambahkan pada Tahap 11. Seluruh pengujian Tahap 10
 tetap lulus; tidak ada test yang diubah agar lulus.
+
+---
+
+## 14. Pengujian Setelah Cutover MySQL (29 Oktober 2026)
+
+Seluruh pengujian dijalankan ulang setelah database aplikasi dipindahkan dari
+SQLite ke MySQL 8.4.13. Rincian pada
+[[MySQL Cutover & Git Baseline Report]].
+
+| Pengujian | Hasil | Bukti |
+|---|---|---|
+| Laravel test suite (MySQL, isolated DB) | **Pass** | 50 test, 216 assertion |
+| System integration (28 skenario, MySQL) | **Pass** | 28/28, 100% |
+| Admin Web test suite | **Pass** | 10 test, 0 gagal |
+| Admin Web typecheck + production build | **Pass** | `tsc --noEmit`, Vite 1.658 modul |
+| Android unit test (backend live) | **Pass** | 42 test, 0 gagal, 0 di-skip |
+| Android APK debug | **Pass** | `app-debug.apk` 70.034.860 byte |
+| Android instrumented test | **Not Run** | Tidak ada emulator/perangkat |
+| Backup MySQL + private storage | **Pass** | `database.sql` 34.867 byte, 8 file dokumen |
+| Restore terisolasi (MySQL) | **Pass** | 12 pemeriksaan, termasuk otorisasi dokumen |
+| Migrasi data SQLite → MySQL | **Pass** | 17 tabel, baris & nilai identik |
+
+Catatan: `applicant_profiles.birth_date` tersimpan sebagai `DATE` di MySQL dan
+`datetime` di SQLite. Respons API tidak berubah karena selalu diserialisasi
+dengan `toDateString()` menjadi `YYYY-MM-DD`.

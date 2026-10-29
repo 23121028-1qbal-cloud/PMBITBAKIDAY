@@ -160,15 +160,18 @@ Pastikan:
 5. Backend dapat terhubung tanpa error.
     
 
-## 6A. Database Lokal dengan Docker Compose (Terverifikasi Tahap 11)
+## 6A. Database Lokal dengan MySQL Resmi (Docker Compose)
 
-Database lokal dijalankan di Docker, sedangkan Laravel dan website admin tetap
-berjalan langsung di komputer host.
+Database resmi proyek adalah **MySQL**. Database lokal dijalankan di Docker,
+sedangkan Laravel dan website admin tetap berjalan langsung di komputer host.
+
+Versi image dipin ke `mysql:8.4.13` (LTS) agar versi server tidak berubah tanpa
+peninjauan. Data disimpan pada named volume `pmb_mysql8_data`.
 
 Menjalankan database:
 
 ```
-cp .env.example .env      # isi DB_PASSWORD dan DB_ROOT_PASSWORD, jangan commit
+cp .env.example .env      # isi MYSQL_PASSWORD dan MYSQL_ROOT_PASSWORD, jangan commit
 chmod 600 .env
 docker compose up -d db
 docker compose ps         # tunggu status (healthy)
@@ -178,29 +181,94 @@ docker compose logs db
 Nilai yang dipakai Laravel, karena Laravel berjalan di host:
 
 ```
-DB_CONNECTION=mariadb
+DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
-DB_PORT=3307
+DB_PORT=3306
 DB_DATABASE=pmb_itb_akiday
 DB_USERNAME=pmb_app
-DB_PASSWORD=<nilai dari .env root>
+DB_PASSWORD=<nilai MYSQL_PASSWORD dari .env root>
+```
+
+Menghentikan dan menjalankan ulang tanpa kehilangan data:
+
+```
+docker compose stop db      # container berhenti, volume tetap
+docker compose up -d db     # data lama dipakai kembali
 ```
 
 Hal yang perlu diperhatikan:
 
 - `127.0.0.1` pada `backend-api/.env` berarti komputer host. Di dalam container,
-  alamat tersebut menunjuk container itu sendiri. Nama service `db` dan port
-  `3306` hanya dipakai bila Laravel ikut dijalankan dalam jaringan Docker.
+  alamat tersebut menunjuk container itu sendiri.
 - Port database hanya dipublikasikan ke `127.0.0.1`, sehingga tidak terbuka ke
   jaringan lain.
-- Data disimpan pada named volume `pmb_mysql_data`. `docker compose stop` dan
-  `docker compose down` tidak menghapus data. Jangan memakai
-  `docker compose down -v` kecuali data memang akan dihapus.
+- `docker compose stop` dan `docker compose down` **tidak** menghapus data.
+  Jangan memakai `docker compose down -v` kecuali data memang akan dihapus.
 - Jika volume sudah berisi data, jangan menginisialisasi ulang.
 - Database kosong diinisialisasi dari `backend-api/` dengan `php artisan migrate`.
   Jangan memakai `migrate:fresh` atau `db:wipe`.
+- Instance MariaDB dari Tahap 11 tidak dihapus. Instance itu berada di profile
+  `legacy-mariadb` dengan volume sendiri (`pmb_mysql_data`) dan tidak dipakai
+  aplikasi:
+  `docker compose --profile legacy-mariadb up -d legacy-mariadb`.
 - Backup dan verifikasi restore: lihat [[Backup & Recovery]] serta
   `scripts/backup.sh` dan `scripts/restore-verify.sh`.
+
+## 6B. Cutover SQLite ke MySQL dan Rollback
+
+Cutover sudah dilakukan pada 29 Oktober 2026. Prosedur yang dipakai:
+
+1. Backup SQLite diverifikasi lebih dulu dengan `scripts/backup.sh` dan
+   `scripts/restore-verify.sh`.
+2. Skema MySQL dibuat dari migration proyek (`php artisan migrate`), bukan dari
+   konversi DDL SQLite.
+3. Data dipindahkan dengan `scripts/migrate-sqlite-to-mysql.php`. Skrip ini
+   menolak berjalan bila target masih SQLite atau sudah berisi data, lalu
+   membandingkan jumlah baris setiap tabel.
+4. `backend-api/.env` diarahkan ke MySQL, `php artisan config:clear` dijalankan,
+   dan aplikasi dibuktikan menulis ke MySQL (baris baru hanya muncul di MySQL,
+   SQLite tetap tidak berubah).
+5. Seluruh test suite dijalankan ulang di atas MySQL.
+
+Verifikasi data: 17 tabel, jumlah baris identik, nilai kolom identik, relasi dan
+indeks unik utuh, serta 7 referensi dokumen semuanya tersedia. Satu perbedaan
+yang disengaja: `applicant_profiles.birth_date` tersimpan sebagai `DATE`
+(`2005-12-04`) di MySQL sedangkan SQLite menyimpan `2005-12-04 00:00:00`. Respons
+API tidak berubah karena controller selalu memakai `->toDateString()`.
+
+**Rollback ke SQLite** (hanya jika MySQL bermasalah):
+
+1. Pastikan tidak ada penulisan baru: hentikan Laravel dan klien.
+2. Cadangkan database MySQL yang sedang dipakai (agar data setelah cutover tidak
+   hilang): `scripts/backup.sh`.
+3. Kembalikan `backend-api/.env`: `DB_CONNECTION=sqlite` dan hapus/komentari
+   `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`.
+4. Jalankan `php artisan config:clear`, lalu ulangi smoke test.
+
+Catatan penting: rollback akan **mengabaikan** data yang ditulis ke MySQL setelah
+cutover. Bila ada data baru, pindahkan dulu secara manual atau terima kehilangan
+tersebut secara sadar. Jangan menghapus file SQLite maupun volume MySQL.
+
+## 6C. Version Control (Git)
+
+Root proyek adalah satu repository Git (`main`). Belum ada remote; jangan
+menambahkan remote atau melakukan push tanpa instruksi pemilik proyek.
+
+```
+git status                 # kondisi working tree
+git log --oneline          # riwayat commit
+git show --stat HEAD       # isi commit terakhir
+```
+
+File yang **tidak boleh** masuk source control (sudah diatur `.gitignore`):
+
+- `.env` dan variannya; hanya `.env.example` yang dilacak.
+- Database lokal `backend-api/database/*.sqlite*`.
+- Dokumen pendaftar di `backend-api/storage/app/private/`.
+- `backend-api/vendor/`, `admin-web/node_modules/`, `admin-web/dist/`.
+- Cache dan hasil build Gradle/Kotlin (`build/`, `.gradle/`, `.kotlin/`).
+- `android-app/local.properties` dan state IDE (`.idea/`).
+- Backup database/arsip dokumen (`backups/`, `*.sql.gz`, `*.tar.gz`, `*.dump`).
 
 ## 7. Instalasi Backend Laravel
 
