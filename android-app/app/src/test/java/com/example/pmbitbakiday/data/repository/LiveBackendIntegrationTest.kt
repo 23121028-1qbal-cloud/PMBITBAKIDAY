@@ -23,6 +23,8 @@ import java.util.concurrent.TimeUnit
 class LiveBackendIntegrationTest {
 
     private lateinit var fakeTokenManager: FakeTokenManager
+    private lateinit var adminEmail: String
+    private lateinit var adminPassword: String
     private lateinit var apiService: ApiService
     private lateinit var authRepository: AuthRepository
     private lateinit var applicationRepository: ApplicationRepository
@@ -38,6 +40,20 @@ class LiveBackendIntegrationTest {
         override fun getUserEmail(): String? = storedEmail
     }
 
+    /**
+     * Kredensial live test dibaca dari environment atau system property.
+     * Tidak ada nilai default: kata sandi tidak boleh tersimpan di repository.
+     */
+    private fun config(name: String): String? =
+        System.getenv(name)?.takeIf { it.isNotBlank() }
+            ?: System.getProperty(name)?.takeIf { it.isNotBlank() }
+
+    private fun requireConfig(name: String): String = config(name)
+        ?: throw AssertionError(
+            "$name belum diisi. Live test membutuhkan akun admin lokal yang nyata; " +
+                "set PMB_TEST_ADMIN_EMAIL dan PMB_TEST_ADMIN_PASSWORD (lihat README)."
+        )
+
     private fun isBackendReachable(): Boolean {
         return try {
             Socket().use { socket ->
@@ -51,8 +67,16 @@ class LiveBackendIntegrationTest {
 
     @Before
     fun setUp() {
+        Assume.assumeTrue(
+            "Live test dilewati: set PMB_LIVE_TESTS=1 untuk menjalankannya terhadap backend lokal.",
+            config("PMB_LIVE_TESTS") == "1",
+        )
+
         val reachable = isBackendReachable()
         Assume.assumeTrue("Backend server at 127.0.0.1:8000 is not running; skipping live test.", reachable)
+
+        adminEmail = requireConfig("PMB_TEST_ADMIN_EMAIL")
+        adminPassword = requireConfig("PMB_TEST_ADMIN_PASSWORD")
 
         fakeTokenManager = FakeTokenManager()
         ApiConfig.setCustomBaseUrl("http://127.0.0.1:8000/api/v1/")
@@ -75,8 +99,8 @@ class LiveBackendIntegrationTest {
 
     @Test
     fun testLiveBackendAuthenticatedWorkflow() = runBlocking {
-        // 1. Login menggunakan akun admin development
-        val loginResult = authRepository.login("admin@example.com", "Secret123!")
+        // 1. Login menggunakan akun admin dari environment
+        val loginResult = authRepository.login(adminEmail, adminPassword)
         assertTrue("Live admin login failed: $loginResult", loginResult is NetworkResult.Success)
         val loginData = (loginResult as NetworkResult.Success).data
         assertNotNull(loginData.accessToken)
@@ -86,7 +110,7 @@ class LiveBackendIntegrationTest {
         val meResult = authRepository.getMe()
         assertTrue("Live getMe failed: $meResult", meResult is NetworkResult.Success)
         val user = (meResult as NetworkResult.Success).data
-        assertEquals("admin@example.com", user.email)
+        assertEquals(adminEmail, user.email)
         assertEquals("admin", user.role)
 
         // 3. Ambil data referensi gelombang pendaftaran
@@ -118,7 +142,7 @@ class LiveBackendIntegrationTest {
 
     @Test
     fun testLiveBackendInvalidCredentialsReturns401() = runBlocking {
-        val result = authRepository.login("admin@example.com", "TotallyWrongPassword123!")
+        val result = authRepository.login(adminEmail, "${adminPassword}_salah")
         assertTrue(result is NetworkResult.Error)
         val error = result as NetworkResult.Error
         assertEquals(401, error.httpStatusCode)

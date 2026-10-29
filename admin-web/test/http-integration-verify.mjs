@@ -1,9 +1,13 @@
 import axios from 'axios';
+import { adminCredentials } from './test-credentials.mjs';
 
 const BASE_URL = 'http://127.0.0.1:8000';
 
 async function runHttpVerification() {
   console.log('--- START HTTP INTEGRATION VERIFICATION ---');
+
+  // Kredensial admin berasal dari environment; tidak ada nilai default.
+  const admin = adminCredentials();
 
   // Create an axios instance that stores cookies between requests
   let cookies = {};
@@ -63,8 +67,8 @@ async function runHttpVerification() {
   // 2. Admin Session Login
   console.log('\n[2] Admin Session Login: POST /api/v1/auth/session/login');
   const loginRes = await request('POST', '/api/v1/auth/session/login', {
-    email: 'admin@example.com',
-    password: 'Secret123!',
+    email: admin.email,
+    password: admin.password,
   });
   console.log('Status:', loginRes.status, 'Body:', JSON.stringify(loginRes.data));
   if (loginRes.status !== 200 || loginRes.data.data?.user?.role !== 'admin') {
@@ -75,7 +79,7 @@ async function runHttpVerification() {
   console.log('\n[3] Session Restoration: GET /api/v1/auth/me');
   const meRes = await request('GET', '/api/v1/auth/me');
   console.log('Status:', meRes.status, 'User Role:', meRes.data.data?.role);
-  if (meRes.status !== 200 || meRes.data.data?.email !== 'admin@example.com') {
+  if (meRes.status !== 200 || meRes.data.data?.email !== admin.email) {
     throw new Error(`Failed Session restoration: ${meRes.status}`);
   }
 

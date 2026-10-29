@@ -1,0 +1,162 @@
+# Continuous integration for PMB ITB Akiday.
+#
+# Three independent jobs, matching the three components in this repository:
+#   * backend  — Laravel test suite against MySQL 8.4 (the official database),
+#   * admin    — typecheck, unit tests and production build of the React app,
+#   * android  — Kotlin unit tests and a debug APK build.
+#
+# Notes:
+#   * Every credential below is a throw-away value that exists only inside this
+#     job's MySQL service container. No project secret is stored in the
+#     repository, and no real .env is used.
+#   * The manual integration scripts in admin-web/test/*.mjs and the Android
+#     live tests are NOT part of this workflow: they need a seeded local
+#     database (reference waves/programs) and real staff accounts, which this
+#     repository cannot provision yet. See docs/09 - Deployment/Testing Guide.
+#   * The Android instrumented tests need an emulator; this workflow only runs
+#     JVM unit tests and the debug build.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (PHP 8.4, MySQL 8.4)
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4.13
+        env:
+          MYSQL_ROOT_PASSWORD: ci-root-only
+          MYSQL_DATABASE: pmb_ci_test
+          MYSQL_USER: pmb_ci
+          MYSQL_PASSWORD: ci-app-only
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
+    env:
+      # Consumed by PHPUnit; the test database is created by the service above.
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_DATABASE: pmb_ci_test
+      DB_USERNAME: pmb_ci
+      DB_PASSWORD: ci-app-only
+
+    defaults:
+      run:
+        working-directory: backend-api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, mbstring, intl, bcmath, fileinfo
+          coverage: none
+
+      - name: Install dependencies from lockfile
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          php artisan config:clear
+
+      - name: Show resolved database (no credentials)
+        run: php artisan db:show --json | head -c 400 || true
+
+      - name: Run test suite on MySQL
+        run: php artisan test
+
+  admin-web:
+    name: Admin web (Node 20)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: admin-web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: admin-web/package-lock.json
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+  android:
+    name: Android (JDK 17)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: android-app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      # PMB_LIVE_TESTS is intentionally not set: the live-backend tests skip
+      # themselves with an explicit message instead of failing, because this
+      # job has no backend and no real account.
+      - name: Unit tests and debug build
+        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android-app/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7

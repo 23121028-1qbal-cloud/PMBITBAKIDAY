@@ -19,25 +19,36 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RoleSeeder::class);
 
-        // Development-only admin account. Credentials come from the
-        // environment so no secret is committed to the repository.
-        $email = env('SEED_ADMIN_EMAIL', 'admin@example.com');
-        $password = env('SEED_ADMIN_PASSWORD');
+        // Development-only staff accounts. Credentials come from the
+        // environment so no secret is committed to the repository, and any
+        // account whose password is unset is skipped entirely.
+        $this->seedStaffUser('admin', 'SEED_ADMIN_EMAIL', 'admin@example.com', 'SEED_ADMIN_PASSWORD');
+        $this->seedStaffUser('panitia', 'SEED_PANITIA_EMAIL', 'panitia@example.com', 'SEED_PANITIA_PASSWORD');
+        $this->seedStaffUser('pimpinan', 'SEED_PIMPINAN_EMAIL', 'pimpinan@example.com', 'SEED_PIMPINAN_PASSWORD');
+    }
 
-        if ($password === null) {
+    /**
+     * Create or update one staff account, using updateOrCreate so re-running the
+     * seeder is idempotent and also re-hashes a rotated password.
+     */
+    private function seedStaffUser(string $role, string $emailKey, string $defaultEmail, string $passwordKey): void
+    {
+        $password = env($passwordKey);
+
+        if ($password === null || $password === '') {
             return;
         }
 
-        $adminRole = Role::query()->where('name', 'admin')->first();
+        $roleModel = Role::query()->where('name', $role)->first();
 
-        if (! $adminRole) {
+        if (! $roleModel) {
             return;
         }
 
         User::query()->updateOrCreate(
-            ['email' => $email],
+            ['email' => env($emailKey, $defaultEmail)],
             [
-                'role_id' => $adminRole->id,
+                'role_id' => $roleModel->id,
                 'password' => Hash::make($password),
                 'is_active' => true,
             ],

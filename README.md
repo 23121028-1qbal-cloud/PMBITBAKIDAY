@@ -54,6 +54,45 @@ Alamat API: emulator memakai `http://10.0.2.2:8000/api/v1/` (default debug),
 perangkat fisik memakai IP komputer pada jaringan yang sama, produksi memakai
 HTTPS. Lihat `docs/09 - Deployment/Deployment Guide.md` untuk detail.
 
+## Pengujian
+
+```bash
+# Backend (MySQL) — pakai database uji terpisah, jangan database aktif
+cd backend-api
+DB_CONNECTION=mysql DB_DATABASE=pmb_itb_akiday_test php artisan test
+
+# Admin web (unit test, typecheck, build)
+cd admin-web
+npm test && npm run typecheck && npm run build
+
+# Android (unit test + APK debug)
+cd android-app
+./gradlew :app:testDebugUnitTest :app:assembleDebug
+```
+
+Skrip integrasi manual di `admin-web/test/*.mjs` dan live test Android
+memerlukan backend yang berjalan **dan** akun staf nyata. Kredensialnya dibaca
+dari environment, tanpa nilai default:
+
+```bash
+# nilainya ada di backend-api/.env (tidak dilacak Git)
+set -a; . backend-api/.env; set +a
+export PMB_TEST_ADMIN_EMAIL="$SEED_ADMIN_EMAIL" PMB_TEST_ADMIN_PASSWORD="$SEED_ADMIN_PASSWORD"
+export PMB_TEST_PANITIA_EMAIL="$SEED_PANITIA_EMAIL" PMB_TEST_PANITIA_PASSWORD="$SEED_PANITIA_PASSWORD"
+export PMB_TEST_PIMPINAN_EMAIL="$SEED_PIMPINAN_EMAIL" PMB_TEST_PIMPINAN_PASSWORD="$SEED_PIMPINAN_PASSWORD"
+
+cd admin-web && node test/product-test-suite.mjs
+cd ../android-app && PMB_LIVE_TESTS=1 ./gradlew :app:testDebugUnitTest
+```
+
+Tanpa variabel tersebut skrip berhenti dengan pesan jelas, dan live test Android
+dilewati (`skipped`) — tidak pernah dilaporkan lulus. Instrumented test Android
+butuh emulator/perangkat: `./gradlew :app:connectedDebugAndroidTest`.
+
+CI: `.github/workflows/ci.yml` menjalankan backend di MySQL 8.4, admin web, dan
+Android pada setiap push/PR. Workflow ini belum pernah dieksekusi karena
+repository belum memiliki remote.
+
 ## Backup dan restore
 
 ```bash
@@ -72,8 +111,10 @@ pendaftar, dependency, dan hasil build tidak dilacak (lihat `.gitignore`).
 
 ## Dokumentasi
 
+- `docs/09 - Deployment/Runbook - Menjalankan Server.md` — cara menyalakan, memeriksa, dan mematikan server
 - `docs/09 - Deployment/Deployment Guide.md` — setup, Docker, cutover, rollback
 - `docs/09 - Deployment/Backup & Recovery.md` — prosedur backup dan restore
 - `docs/09 - Deployment/Environment Configuration.md` — konfigurasi lingkungan
 - `docs/04 - API/Api Contract.md` — kontrak API
-- `docs/08 - Testing/Test Results.md` — hasil pengujian
+- `docs/08 - Testing/Test Results.md` — hasil pengujian (termasuk Tahap 12)
+- `docs/09 - Deployment/Tahap 12 - Release Readiness Report.md` — audit rilis, CI, kredensial uji

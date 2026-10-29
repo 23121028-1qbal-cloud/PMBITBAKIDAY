@@ -261,6 +261,49 @@ Tanpa akun tersebut skrip melaporkan `NOT RUN` dan tidak mengubah apa pun.
 4. Restore ke database aktif tetap memerlukan persetujuan; jangan mengganti
    database atau dokumen aktif dengan hasil pengujian.
 
+## 7B. Status Kebijakan Backup Setelah Cutover MySQL (Tahap 12)
+
+### 7B.1 Yang sudah terbukti, bukan usulan
+
+|Aspek|Kondisi terverifikasi (29 Oktober 2026)|
+|---|---|
+|Database yang dicadangkan|MySQL 8.4.13, database `pmb_itb_akiday`, 17 tabel|
+|Lokasi default|`<root proyek>/../pmb_backups/<timestamp-UTC>/`, di luar source code|
+|Komponen|Dump `database.sql` + `documents.tar.gz` (private storage) + `documents.sha256` + `db-counts.json` + `manifest.txt` + `SHA256SUMS`|
+|Konsistensi|Dump memakai `--single-transaction`; perubahan file selama backup dicatat pada `documents_changed_during_backup`; referensi dokumen dihitung (8 dirujuk, 0 hilang)|
+|Verifikasi checksum|Seluruh artefak dan setiap file dokumen dibandingkan dengan SHA256|
+|Uji restore|`scripts/restore-verify.sh` ke database scratch + direktori terpisah: 12/12 pemeriksaan PASS, termasuk 401/200/404/403 pada akses dokumen|
+|Backup terakhir|`20261029T003512Z`, status `complete`, dump 40.335 byte, 17 tabel, 8 referensi dokumen|
+|Akses|Direktori backup dibuat dengan `umask 077` dan `700`/`600`. Pada mount `fuseblk` (NTFS) permission tidak ditegakkan dan manifest menulis `filesystem_enforces_permissions=no`|
+
+### 7B.2 Yang belum diputuskan pengguna (NEEDS DECISION)
+
+Bagian ini **belum** diterapkan. Jangan menganggap jadwal, retensi, atau lokasi
+final sudah ada.
+
+|Keputusan|Rekomendasi teknis|Status|
+|---|---|---|
+|Jadwal backup otomatis|Harian setelah jam kerja + sebelum setiap perubahan skema, dijalankan lewat cron/systemd timer yang memanggil `scripts/backup.sh`|**NEEDS DECISION**|
+|Lokasi salinan terpisah|Minimal satu salinan pada media/ perangkat lain, tidak selalu terpasang|**NEEDS DECISION**|
+|Enkripsi arsip|`tar -czf - <folder-backup> \| gpg --symmetric --cipher-algo AES256 -o <folder>.tar.gz.gpg`; kunci disimpan terpisah dari arsip|**NEEDS DECISION** (belum diaktifkan)|
+|Retensi|7 harian, 4 mingguan, 3 bulanan (usulan bagian 5)|**NEEDS DECISION**|
+|RPO / RTO|RPO ≤ 24 jam, RTO ≤ 8 jam (usulan bagian 12)|**NEEDS DECISION**|
+|Penanggung jawab|Satu admin operasional + satu pengganti yang memegang kunci enkripsi|**NEEDS DECISION**|
+|Notifikasi kegagalan|Pesan error `backup.sh` dikirim ke kanal operasional|**NEEDS DECISION**|
+
+### 7B.3 Rollback setelah cutover dan data baru
+
+Rollback ke SQLite hanya memulihkan kondisi **sebelum** cutover. Setelah cutover,
+aplikasi menulis ke MySQL (pendaftaran, dokumen, token), sehingga:
+
+1. Rollback tanpa rekonsiliasi akan **kehilangan** data yang ditulis setelah
+   cutover.
+2. Prosedur yang benar: buat backup MySQL terbaru → ekspor baris baru → tentukan
+   apakah baris tersebut dipindahkan ke SQLite → jalankan rollback → verifikasi
+   ulang melalui `restore-verify.sh`.
+3. File SQLite lama tidak dihapus dan tetap menjadi jalur pemulihan terakhir;
+   lihat `Deployment Guide.md` bagian 6B.
+
 ## 8. Perlindungan Backup
 
 Backup harus diperlakukan sebagai data sensitif, bukan sebagai file biasa.

@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { generatedPassword, panitiaCredentials, pimpinanCredentials } from './test-credentials.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -193,7 +194,13 @@ async function runProductTests() {
 
   const emailA = `calon_a_${ts}@pmb.itbakiday.ac.id`;
   const emailB = `calon_b_${ts}@pmb.itbakiday.ac.id`;
-  const password = 'PasswordPmb2026!';
+  // Akun calon mahasiswa dibuat oleh skrip ini sendiri, jadi kata sandinya
+  // diacak per eksekusi dan tidak pernah menjadi kredensial tetap di repo.
+  const password = generatedPassword();
+
+  // Akun staf berasal dari environment; tanpa nilai default.
+  const panitia = panitiaCredentials();
+  const pimpinan = pimpinanCredentials();
 
   let appIdA = null;
   let docIdA = null;
@@ -260,7 +267,7 @@ async function runProductTests() {
   // TR-003: Pengguna login dengan kata sandi yang salah
   const invalidLogin = await applicantA.request('POST', '/api/v1/auth/login', {
     email: emailA,
-    password: 'SalahPassword123!',
+    password: `${password}_salah`,
   });
   if (invalidLogin.status === 422 || invalidLogin.status === 401) {
     recordResult(
@@ -498,8 +505,8 @@ async function runProductTests() {
   // Panitia login sesi browser
   await panitiaClient.bootstrapCsrf();
   await panitiaClient.request('POST', '/api/v1/auth/session/login', {
-    email: 'panitia@example.com',
-    password: 'Secret123!',
+    email: panitia.email,
+    password: panitia.password,
   });
 
   // TR-014: Panitia membuka pendaftaran yang menjadi kewenangannya
@@ -597,8 +604,8 @@ async function runProductTests() {
   // Pimpinan login sesi browser
   await pimpinanClient.bootstrapCsrf();
   await pimpinanClient.request('POST', '/api/v1/auth/session/login', {
-    email: 'pimpinan@example.com',
-    password: 'Secret123!',
+    email: pimpinan.email,
+    password: pimpinan.password,
   });
 
   // Pimpinan tidak memiliki hak menetapkan keputusan teknis (hanya admin/panitia)

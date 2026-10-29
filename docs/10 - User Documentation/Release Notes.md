@@ -101,6 +101,28 @@ Fitur-fitur tersebut masih harus disesuaikan dengan hasil implementasi dan pengu
 - Data pendaftaran pada gelombang yang sama harus dilindungi dari duplikasi, termasuk ketika beberapa permintaan dikirim secara bersamaan.
     
 
+## 4A. Status Implementasi dan Pengujian (29 Oktober 2026)
+
+Bagian ini mencatat kondisi **aktual** yang sudah diverifikasi, terpisah dari
+rencana pada bagian 3 dan 4. Rilis belum dinyatakan siap.
+
+|Aspek|Kondisi terverifikasi|Status|
+|---|---|---|
+|Backend|Laravel 13.39, PHP 8.4.24, REST API `/api/v1`|**VERIFIED**|
+|Database|MySQL 8.4.13 (Docker, volume `pmb_mysql8_data`), 17 tabel, data SQLite termigrasi penuh|**VERIFIED**|
+|Test backend|50 test lulus (216 assertion) pada MySQL|**PASS**|
+|Website admin|React + TypeScript + Vite; typecheck bersih, 10 unit test lulus, build produksi lulus|**PASS**|
+|Aplikasi Android|Kotlin + Compose; 42 unit test lulus, APK debug terbangun (70.034.860 byte)|**PASS**|
+|Instrumented test Android|Tidak dijalankan: tidak ada emulator/perangkat|**NOT RUN**|
+|Dokumen privat|Tetap di `backend-api/storage/app/private/`; akses hanya lewat endpoint terotorisasi (401/404/403 diuji pada hasil restore)|**VERIFIED**|
+|Backup dan restore|Backup `20261029T003512Z` status `complete`; restore terisolasi 12/12 lulus|**PASS**|
+|Repository|Satu repository Git, branch `main`, baseline + dokumentasi; belum ada remote|**VERIFIED**|
+|CI|`.github/workflows/ci.yml` untuk backend (MySQL), admin web, Android|**NOT RUN** (belum pernah dieksekusi; repo tanpa remote)|
+
+Pengujian yang belum dijalankan tidak boleh diubah menjadi klaim lulus. Rincian
+perintah dan area yang belum diuji ada pada `docs/08 - Testing/Test Results.md`
+bagian 13.
+
 ## 5. Perubahan dari Versi Sebelumnya
 
 Versi `0.1.0-alpha` merupakan versi awal yang direncanakan sehingga belum memiliki versi rilis sebelumnya untuk dibandingkan.
@@ -163,6 +185,11 @@ Area pengujian utama:
 
 **Status pengujian saat dokumen dibuat:** belum dinyatakan lulus. Hasil akhirnya harus diperbarui setelah pengujian benar-benar dilaksanakan dan bukti pengujian tersedia.
 
+**Pembaruan 29 Oktober 2026:** unit test, typecheck, build, integrasi produk,
+backup, dan restore sudah dijalankan dan lulus (lihat bagian 4A). Yang belum:
+instrumented test Android (tidak ada emulator/perangkat) dan eksekusi workflow
+CI (belum ada remote). Keduanya berstatus `NOT RUN`, bukan lulus.
+
 ## 8. Kriteria Kesiapan Rilis
 
 Rilis dapat dipertimbangkan untuk digunakan setelah:
@@ -210,6 +237,7 @@ Setiap rilis berikutnya perlu mencatat:
 |Versi Dokumen|Perubahan|Status|
 |---|---|---|
 |1.0|Penyusunan awal Release Notes untuk rilis alpha yang direncanakan|Draft|
+|1.1|Menambahkan status implementasi dan pengujian aktual per 29 Oktober 2026 (bagian 4A)|Draft|
 
 ---
 

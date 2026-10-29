@@ -264,3 +264,62 @@ SQLite ke MySQL 8.4.13. Rincian pada
 Catatan: `applicant_profiles.birth_date` tersimpan sebagai `DATE` di MySQL dan
 `datetime` di SQLite. Respons API tidak berubah karena selalu diserialisasi
 dengan `toDateString()` menjadi `YYYY-MM-DD`.
+
+---
+
+## 13. Hasil Pengujian Tahap 12 (29 Oktober 2026)
+
+Bagian ini mencatat pengujian yang benar-benar dijalankan pada Tahap 12.
+Angka pada bagian 1–12 di atas **tidak diubah**: bagian tersebut adalah riwayat
+pengujian Tahap 9–11. Status di bawah memakai `PASS`, `FAIL`, `NOT RUN`,
+`BLOCKED`, atau `NEEDS DECISION`.
+
+### 13.1 Ringkasan
+
+|Area|Perintah|Hasil|Status|
+|---|---|---|---|
+|Backend (MySQL 8.4.13)|`DB_CONNECTION=mysql DB_DATABASE=pmb_itb_akiday_test php artisan test`|50 lulus, 216 assertion, 7,73 dtk, 0 gagal|**PASS**|
+|Kontrol koneksi DB|perintah sama dengan `DB_PORT=3399` (tidak ada server)|4 test gagal `Connection refused`|**PASS** (bukti env DB benar-benar dipakai)|
+|Admin web – typecheck|`npm run typecheck`|tanpa error|**PASS**|
+|Admin web – unit test|`npm test`|10 lulus, 0 gagal, 0 dilewati|**PASS**|
+|Admin web – build produksi|`npm run build`|`✓ built in 11.22s`|**PASS**|
+|Integrasi produk (manual)|`node test/product-test-suite.mjs` dengan kredensial dari environment|20 lulus (TR-001…TR-020), 0 gagal|**PASS**|
+|Android – unit test (tanpa live)|`./gradlew :app:testDebugUnitTest`|42 test, 0 gagal, 2 dilewati|**PASS WITH SKIPS**|
+|Android – unit test (live)|`PMB_LIVE_TESTS=1 … ./gradlew :app:testDebugUnitTest`|42 test, 0 gagal, 0 dilewati|**PASS**|
+|Android – build debug|`./gradlew :app:assembleDebug`|`BUILD SUCCESSFUL`, APK 70.034.860 byte|**PASS**|
+|Android – instrumented test|`./gradlew :app:connectedDebugAndroidTest`|tidak ada emulator/perangkat|**NOT RUN**|
+|CI GitHub Actions|`.github/workflows/ci.yml`|YAML valid; belum pernah dieksekusi (repo tanpa remote)|**NOT RUN**|
+|Backup + restore|`scripts/backup.sh`, `scripts/restore-verify.sh`|backup `20261029T003512Z`; 12/12 pemeriksaan lulus|**PASS**|
+
+### 13.2 Perubahan konfigurasi kredensial pengujian
+
+Sebelum Tahap 12, lima berkas memakai kredensial staf tetap yang juga valid di
+database lokal. Kredensial tersebut kini dibaca dari environment:
+
+|Variabel|Dipakai oleh|
+|---|---|
+|`PMB_TEST_ADMIN_EMAIL`, `PMB_TEST_ADMIN_PASSWORD`|`admin-web/test/http-integration-verify.mjs`, `system-integration-verify.mjs`, `LiveBackendIntegrationTest.kt`|
+|`PMB_TEST_PANITIA_EMAIL` / `_PASSWORD`|`admin-web/test/product-test-suite.mjs`|
+|`PMB_TEST_PIMPINAN_EMAIL` / `_PASSWORD`|`admin-web/test/product-test-suite.mjs`|
+|`PMB_LIVE_TESTS=1`|mengaktifkan live test Android|
+
+Tidak ada nilai default. Tanpa variabel tersebut, skrip berhenti dengan pesan yang
+menyebut nama variabel yang kurang (diverifikasi: kode keluar 1 dan pesan
+`Konfigurasi kredensial test tidak lengkap: PMB_TEST_ADMIN_EMAIL belum diisi.`).
+Kata sandi untuk akun yang dibuat sendiri oleh skrip (calon mahasiswa) diacak
+per eksekusi, sehingga tidak ada kata sandi tetap yang tersisa di repository.
+
+Kredensial staf lama yang pernah tertulis di repository sudah **di-rotasi** pada
+database lokal; nilai baru hanya tersimpan di `backend-api/.env` (tidak dilacak
+Git). Bukti: login dengan kata sandi lama → `401`, dengan kata sandi baru → `200`
+untuk `admin@example.com`, `panitia@example.com`, dan `pimpinan@example.com`.
+
+### 13.3 Catatan penting
+
+1. Live test Android hanya berjalan bila `PMB_LIVE_TESTS=1` **dan** backend lokal
+   aktif. Tanpa itu test dilewati dengan pesan eksplisit, bukan dinyatakan lulus.
+2. `npm test` hanya menjalankan unit test (`test/*.test.mjs`). Skrip integrasi
+   manual butuh database terisi dan akun staf nyata, sehingga tidak dijalankan
+   otomatis oleh CI.
+3. Angka 42 test Android di atas adalah hasil eksekusi ulang hari ini, bukan
+   salinan angka dari Tahap 10.

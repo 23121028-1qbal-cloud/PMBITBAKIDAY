@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { adminCredentials, generatedPassword } from './test-credentials.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -245,7 +246,9 @@ async function runAllScenarios() {
 
   const timestamp = Date.now();
   const testApplicantEmail = `mhs_integ_${timestamp}@example.test`;
-  const testApplicantPassword = 'IntegPassword123!';
+  // Kata sandi akun uji dibuat acak per eksekusi: tidak ada kata sandi tetap
+  // yang tersimpan di repository.
+  const testApplicantPassword = generatedPassword();
   let createdAppId = null;
   let createdDocId = null;
   let activeWaveId = null;
@@ -278,9 +281,11 @@ async function runAllScenarios() {
   }
 
   // SI-02: Admin Web Session Login with valid credentials
+  // Kredensial admin dibaca dari environment (tanpa nilai default).
+  const admin = adminCredentials();
   const adminLoginRes = await adminClient.request('POST', '/api/v1/auth/session/login', {
-    email: 'admin@example.com',
-    password: 'Secret123!',
+    email: admin.email,
+    password: admin.password,
   });
   if (adminLoginRes.status === 200 && adminLoginRes.data?.data?.user?.role === 'admin') {
     recordResult(

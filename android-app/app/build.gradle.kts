@@ -42,6 +42,16 @@ android {
     }
 }
 
+// Live integration tests read credentials from the environment. The Gradle
+// daemon can outlive the shell that exported them, so forward the variables
+// explicitly. They are only set when the caller provides them; nothing is
+// committed and no default value exists.
+listOf("PMB_LIVE_TESTS", "PMB_TEST_ADMIN_EMAIL", "PMB_TEST_ADMIN_PASSWORD").forEach { key ->
+    providers.environmentVariable(key).orNull?.let { value ->
+        tasks.withType<Test>().configureEach { environment(key, value) }
+    }
+}
+
 dependencies {
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.appcompat)
