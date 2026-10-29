@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Local environment values (API base URL, etc.). Keep templates only.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+.vite/
+coverage/
+.DS_Store

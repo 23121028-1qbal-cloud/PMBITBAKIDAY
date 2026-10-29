@@ -1,0 +1,76 @@
+# PMB ITB Akiday — local database for development.
+#
+# The official project database is MySQL. Laravel and the admin website keep
+# running directly on the host, so they connect to the published port on
+# 127.0.0.1 (not to the service name).
+#
+#   docker compose up -d db
+#   docker compose ps
+#   docker compose logs db
+#   docker compose stop db      # data survives, the named volume is kept
+#
+# Never run `docker compose down -v` unless you intend to destroy the data.
+#
+# Values come from the root .env file (see .env.example), which is never
+# committed.
+
+services:
+  db:
+    # Pinned on purpose: an unpinned tag can change the server version (and its
+    # defaults) without review. MySQL 8.4 is the current LTS line.
+    image: mysql:8.4.13
+    container_name: pmb-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pmb_itb_akiday}
+      MYSQL_USER: ${MYSQL_USER:?set MYSQL_USER in .env}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+    command:
+      # Matches config/database.php (utf8mb4 / utf8mb4_unicode_ci).
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max-connections=100
+    ports:
+      # Loopback only: the database is never exposed to the network.
+      - "127.0.0.1:${MYSQL_FORWARD_PORT:-3306}:3306"
+    volumes:
+      - pmb_mysql8_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  # Retired MariaDB instance from Tahap 11. It is kept — with its own volume —
+  # only so the old data can be inspected or recovered. It is NOT started by
+  # default and its volume is NOT reused for MySQL.
+  #
+  #   docker compose --profile legacy-mariadb up -d legacy-mariadb
+#   docker compose --profile legacy-mariadb stop legacy-mariadb
+  legacy-mariadb:
+    profiles: ["legacy-mariadb"]
+    image: mariadb:11.8
+    container_name: pmb-itb-akiday-db
+    restart: "no"
+    environment:
+      # Prefixed LEGACY_* on purpose: the old DB_* names collide with the
+      # variables Laravel reads, so sourcing this file in a shell would poison
+      # any Laravel process started from it.
+      MARIADB_ROOT_PASSWORD: ${LEGACY_DB_ROOT_PASSWORD:?set LEGACY_DB_ROOT_PASSWORD in .env}
+      MARIADB_DATABASE: ${LEGACY_DB_DATABASE:-pmb_itb_akiday}
+      MARIADB_USER: ${LEGACY_DB_USERNAME:?set LEGACY_DB_USERNAME in .env}
+      MARIADB_PASSWORD: ${LEGACY_DB_PASSWORD:?set LEGACY_DB_PASSWORD in .env}
+      MARIADB_AUTO_UPGRADE: "1"
+    ports:
+      - "127.0.0.1:${LEGACY_DB_FORWARD_PORT:-3307}:3306"
+    volumes:
+      - pmb_mysql_data:/var/lib/mysql
+
+volumes:
+  pmb_mysql8_data:
+    name: pmb_mysql8_data
+  # Existing volume created in Tahap 11; referenced, never recreated.
+  pmb_mysql_data:
+    name: pmb_mysql_data
