@@ -79,7 +79,9 @@ class AuthRepositoryTest {
 
         server.enqueue(MockResponse().setResponseCode(200).setBody(successJson))
 
-        val result = authRepository.login("mhs@example.com", "Secret123!")
+        // Nilai apa pun sah di sini: MockWebServer membalas tanpa memeriksa
+        // kata sandi, dan akun ini tidak ada di database mana pun.
+        val result = authRepository.login("mhs@example.com", "KataSandiUji123!")
 
         assertTrue(result is NetworkResult.Success)
         val data = (result as NetworkResult.Success).data
