@@ -139,6 +139,14 @@ nanti dibagikan atau di-push, pertimbangkan pembersihan riwayat
 Angka di atas adalah hasil eksekusi hari ini. Angka Tahap 9–11 pada
 `Test Results.md` bagian 1–12 tidak diubah.
 
+Catatan cakupan: yang dijalankan ulang pada Tahap 12 adalah
+`product-test-suite.mjs` (membuat akun dan pendaftarannya sendiri). Dua skrip
+lain — `http-integration-verify.mjs` dan `system-integration-verify.mjs` —
+**tidak** dijalankan ulang karena keduanya mengubah status pendaftaran yang
+sudah ada di database dev; kredensialnya sudah dimigrasikan ke pola environment
+yang sama dan lolos pemeriksaan sintaks (`node --check`), tetapi hasil
+fungsionalnya tidak diklaim ulang di sini.
+
 ---
 
 ## 8. Status Backup dan Restore
@@ -232,8 +240,10 @@ terpisah dari Tahap 12 dan **belum** dilakukan.
    RPO/RTO belum ditetapkan.
 6. **Data referensi tidak punya seeder**, sehingga skrip integrasi tidak dapat
    dijalankan di CI (`BLOCKED`).
-7. **Database dev terisi akun uji** dari eksekusi berulang (misalnya
-   `calon_a_*`, `mhs_integ_*`) — bukan data pengguna, tetapi mengotori demo.
+7. **Database dev terisi akun uji** dari eksekusi berulang: per akhir Tahap 12
+   tercatat 14 user, 11 pendaftaran, dan 8 dokumen (sebelumnya 10/7/5). Akun
+   uji seperti `calon_a_*`, `mhs_integ_*` bukan data pendaftar nyata, tetapi
+   mengotori demo. Keputusan pembersihan ada pada D-6.
 8. **`APP_DEBUG=true` dan `APP_ENV=local`** pada `.env` lokal.
 
 ### Rendah
