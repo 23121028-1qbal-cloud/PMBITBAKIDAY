@@ -269,6 +269,13 @@ File yang **tidak boleh** masuk source control (sudah diatur `.gitignore`):
 - Cache dan hasil build Gradle/Kotlin (`build/`, `.gradle/`, `.kotlin/`).
 - `android-app/local.properties` dan state IDE (`.idea/`).
 - Backup database/arsip dokumen (`backups/`, `*.sql.gz`, `*.tar.gz`, `*.dump`).
+- Kredensial pengujian; skrip integrasi membacanya dari environment
+  (`PMB_TEST_*`), bukan dari kode.
+
+Continuous integration disiapkan di `.github/workflows/ci.yml` (backend pada
+MySQL 8.4, admin web, Android) dan berjalan pada `push` ke `main` serta
+`pull_request`. Workflow ini belum pernah dieksekusi karena repository belum
+memiliki remote; statusnya `NOT RUN` sampai push pertama.
 
 ## 7. Instalasi Backend Laravel
 
