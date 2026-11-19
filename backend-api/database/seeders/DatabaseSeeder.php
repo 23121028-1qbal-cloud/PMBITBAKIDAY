@@ -19,24 +19,29 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RoleSeeder::class);
 
-        // Development-only staff accounts. Credentials come from the
-        // environment so no secret is committed to the repository, and any
-        // account whose password is unset is skipped entirely.
-        $this->seedStaffUser('admin', 'SEED_ADMIN_EMAIL', 'admin@example.com', 'SEED_ADMIN_PASSWORD');
-        $this->seedStaffUser('panitia', 'SEED_PANITIA_EMAIL', 'panitia@example.com', 'SEED_PANITIA_PASSWORD');
-        $this->seedStaffUser('pimpinan', 'SEED_PIMPINAN_EMAIL', 'pimpinan@example.com', 'SEED_PIMPINAN_PASSWORD');
+        // Development staff accounts. Default passwords are provided for
+        // local development and documentation testing, and can be overridden
+        // via environment variables in backend-api/.env.
+        $this->seedStaffUser('admin', 'SEED_ADMIN_EMAIL', 'admin@example.com', 'SEED_ADMIN_PASSWORD', 'admin123');
+        $this->seedStaffUser('panitia', 'SEED_PANITIA_EMAIL', 'panitia@example.com', 'SEED_PANITIA_PASSWORD', 'panitia123');
+        $this->seedStaffUser('pimpinan', 'SEED_PIMPINAN_EMAIL', 'pimpinan@example.com', 'SEED_PIMPINAN_PASSWORD', 'pimpinan123');
     }
 
     /**
      * Create or update one staff account, using updateOrCreate so re-running the
      * seeder is idempotent and also re-hashes a rotated password.
      */
-    private function seedStaffUser(string $role, string $emailKey, string $defaultEmail, string $passwordKey): void
-    {
-        $password = env($passwordKey);
+    private function seedStaffUser(
+        string $role,
+        string $emailKey,
+        string $defaultEmail,
+        string $passwordKey,
+        string $defaultPassword = 'password123'
+    ): void {
+        $password = env($passwordKey, $defaultPassword);
 
         if ($password === null || $password === '') {
-            return;
+            $password = $defaultPassword;
         }
 
         $roleModel = Role::query()->where('name', $role)->first();

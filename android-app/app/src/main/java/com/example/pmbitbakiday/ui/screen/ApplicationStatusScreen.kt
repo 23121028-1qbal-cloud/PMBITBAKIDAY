@@ -11,17 +11,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,11 +43,28 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.pmbitbakiday.data.model.StatusHistoryDto
+import com.example.pmbitbakiday.ui.theme.CharcoalBackground
+import com.example.pmbitbakiday.ui.theme.CoralRed
+import com.example.pmbitbakiday.ui.theme.LimePastel
+import com.example.pmbitbakiday.ui.theme.PastelYellow
+import com.example.pmbitbakiday.ui.theme.SoftOrange
+import com.example.pmbitbakiday.ui.theme.StatusError
+import com.example.pmbitbakiday.ui.theme.StatusInfo
+import com.example.pmbitbakiday.ui.theme.StatusSuccess
+import com.example.pmbitbakiday.ui.theme.StatusWarning
+import com.example.pmbitbakiday.ui.theme.SurfacePrimary
+import com.example.pmbitbakiday.ui.theme.SurfaceSecondary
+import com.example.pmbitbakiday.ui.theme.TextMuted
+import com.example.pmbitbakiday.ui.theme.TextOnBrightAccent
+import com.example.pmbitbakiday.ui.theme.TextPrimaryOnDark
+import com.example.pmbitbakiday.ui.theme.TextSecondaryOnDark
 import com.example.pmbitbakiday.ui.viewmodel.ApplicantViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,35 +79,55 @@ fun ApplicationStatusScreen(
     val isLoading by viewModel.isOnlineLoading.collectAsState()
 
     Scaffold(
+        containerColor = CharcoalBackground,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = "Status Pendaftaran Online",
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        fontSize = 20.sp,
+                        color = TextPrimaryOnDark
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Kembali",
-                            tint = Color.White
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(SurfacePrimary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Kembali",
+                                tint = TextPrimaryOnDark,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.loadOnlineData() }) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Muat Ulang Data",
-                            tint = Color.White
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(SurfacePrimary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Muat Ulang Data",
+                                tint = PastelYellow,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = CharcoalBackground
                 )
             )
         }
@@ -98,41 +139,58 @@ fun ApplicationStatusScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.padding(24.dp)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfacePrimary)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.height(48.dp)
-                    )
-                    Text(
-                        text = "Belum Ada Pengajuan Pendaftaran",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Silakan lengkapi formulir pendaftaran calon mahasiswa untuk memulai pengajuan pendaftaran online.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Button(onClick = onBack) {
-                        Text("Buka Formulir Pendaftaran")
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = PastelYellow,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Text(
+                            text = "Belum Ada Pengajuan Online",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimaryOnDark
+                        )
+                        Text(
+                            text = "Silakan isi formulir pendaftaran calon mahasiswa untuk memulai pengajuan pendaftaran online ke server PMB ITB Akiday.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextMuted
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = onBack,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PastelYellow,
+                                contentColor = TextOnBrightAccent
+                            ),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Text("Buka Formulir Pendaftaran", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
         } else {
             val app = myApp!!
             val statusColor = when (app.status) {
-                "accepted" -> Color(0xFF16A34A)
-                "rejected" -> Color(0xFFDC2626)
-                "revision" -> Color(0xFFD97706)
-                "review" -> Color(0xFF2563EB)
-                "submitted" -> Color(0xFF0F766E)
-                else -> Color(0xFF6B7280)
+                "accepted" -> StatusSuccess
+                "rejected" -> StatusError
+                "revision" -> StatusWarning
+                "review" -> StatusInfo
+                "submitted" -> StatusInfo
+                else -> TextMuted
             }
 
             LazyColumn(
@@ -143,13 +201,13 @@ fun ApplicationStatusScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    // Status Header Card
+                    // Status Header Card (Pastel Lime / Yellow)
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        shape = RoundedCornerShape(12.dp)
+                        colors = CardDefaults.cardColors(containerColor = LimePastel),
+                        shape = RoundedCornerShape(24.dp)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                        Column(modifier = Modifier.padding(18.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -158,17 +216,18 @@ fun ApplicationStatusScreen(
                                 Text(
                                     text = app.registrationNumber,
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextOnBrightAccent
                                 )
                                 Surface(
-                                    color = statusColor.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(8.dp)
+                                    color = TextOnBrightAccent,
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Text(
                                         text = app.status.uppercase(),
                                         color = statusColor,
                                         fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                                         style = MaterialTheme.typography.labelMedium
                                     )
                                 }
@@ -178,68 +237,79 @@ fun ApplicationStatusScreen(
 
                             Text(
                                 text = "Gelombang: ${app.wave?.name ?: "-"}",
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = TextOnBrightAccent
                             )
                             Text(
                                 text = "Program Studi: ${app.studyProgram?.name ?: "-"}",
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = TextOnBrightAccent
                             )
                             if (app.submittedAt != null) {
                                 Text(
                                     text = "Dikirim Pada: ${app.submittedAt}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.DarkGray
+                                    color = TextOnBrightAccent.copy(alpha = 0.8f)
                                 )
                             }
                         }
                     }
                 }
 
-                // Banner Instruksi Khusus Revisi
+                // Banner Instruksi Khusus Revisi (Coral Red / Soft Orange Surface)
                 if (app.status == "revision") {
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF3C7)),
-                            shape = RoundedCornerShape(12.dp)
+                            colors = CardDefaults.cardColors(containerColor = SoftOrange),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
                                         imageVector = Icons.Default.Warning,
                                         contentDescription = null,
-                                        tint = Color(0xFFD97706)
+                                        tint = TextOnBrightAccent
                                     )
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = " Perlu Perbaikan Berkas",
+                                        text = "Perlu Perbaikan Berkas",
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFB45309)
+                                        color = TextOnBrightAccent
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = "Panitia telah meninjau pengajuan Anda dan meminta perbaikan data/dokumen. Silakan periksa riwayat catatan panitia di bawah, lalu kirim ulang perbaikan.",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF92400E)
+                                    color = TextOnBrightAccent.copy(alpha = 0.9f)
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Button(
                                     onClick = {
-                                        viewModel.resubmitOnlineApplication(app.id) { success, msg ->
+                                        viewModel.resubmitOnlineApplication(app.id) { _, msg ->
                                             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     enabled = !isLoading,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = TextOnBrightAccent,
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(16.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     if (isLoading) {
                                         CircularProgressIndicator(
                                             color = Color.White,
-                                            modifier = Modifier.height(20.dp)
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     } else {
-                                        Icon(Icons.Default.Send, contentDescription = null)
-                                        Text(" Kirim Ulang Perbaikan (Resubmit)")
+                                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Kirim Ulang Perbaikan (Resubmit)", fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -252,8 +322,8 @@ fun ApplicationStatusScreen(
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFDCFCE7)),
-                            shape = RoundedCornerShape(12.dp)
+                            colors = CardDefaults.cardColors(containerColor = StatusSuccess),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Row(
                                 modifier = Modifier.padding(16.dp),
@@ -262,13 +332,15 @@ fun ApplicationStatusScreen(
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
                                     contentDescription = null,
-                                    tint = Color(0xFF16A34A)
+                                    tint = TextOnBrightAccent,
+                                    modifier = Modifier.size(28.dp)
                                 )
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    text = " Selamat! Pendaftaran Anda telah dinyatakan DITERIMA.",
+                                    text = "Selamat! Pendaftaran Anda telah dinyatakan DITERIMA di ITB Akiday.",
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF15803D),
-                                    modifier = Modifier.padding(start = 8.dp)
+                                    color = TextOnBrightAccent,
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                             }
                         }
@@ -279,7 +351,8 @@ fun ApplicationStatusScreen(
                     Text(
                         text = "Riwayat Status Pendaftaran",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimaryOnDark
                     )
                 }
 
@@ -287,7 +360,7 @@ fun ApplicationStatusScreen(
                     item {
                         Text(
                             text = "Belum ada riwayat status tercatat.",
-                            color = Color.Gray,
+                            color = TextMuted,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -295,6 +368,10 @@ fun ApplicationStatusScreen(
                     items(histories) { history ->
                         StatusHistoryItem(history = history)
                     }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(80.dp))
                 }
             }
         }
@@ -305,11 +382,10 @@ fun ApplicationStatusScreen(
 fun StatusHistoryItem(history: StatusHistoryDto) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(8.dp)
+        colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -318,22 +394,22 @@ fun StatusHistoryItem(history: StatusHistoryDto) {
                     text = "${history.fromStatus ?: "Awal"} → ${history.toStatus.uppercase()}",
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = PastelYellow
                 )
                 if (history.changedAt != null) {
                     Text(
                         text = history.changedAt.substringBefore("T"),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = TextMuted
                     )
                 }
             }
             if (!history.note.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Catatan: ${history.note}",
+                    text = "Catatan Panitia: ${history.note}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.DarkGray
+                    color = TextSecondaryOnDark
                 )
             }
         }

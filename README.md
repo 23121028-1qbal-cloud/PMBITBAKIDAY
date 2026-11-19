@@ -22,37 +22,100 @@ terotorisasi.
 - Docker + Docker Compose (untuk database lokal)
 - JDK 17+ dan Android SDK (untuk aplikasi Android)
 
-## Menjalankan sistem (lokal)
+## Menjalankan Server Web (`backend-api` & `admin-web`)
+
+Sistem web terdiri dari Database MySQL, Backend API (Laravel), dan Website Admin (React + Vite). Urutan menyalakan harus sesuai dependensi:
+**Database MySQL ➔ Backend API (Port 8000) ➔ Admin Web (Port 3000)**.
+
+### 1. Menyalakan Database (Prasyarat Backend)
+Database lokal dijalankan melalui Docker Compose menggunakan MySQL 8.4:
+```bash
+# Dari root project:
+docker compose up -d db
+
+# Pastikan container berstatus healthy (tunggu ±10-30 detik pertama):
+docker compose ps
+```
+
+### 2. Menghidupkan Server Backend API (`backend-api`)
+Backend Laravel bertindak sebagai REST API dan sumber data (`http://127.0.0.1:8000`):
+```bash
+# Buka terminal dan pindah ke direktori backend:
+cd backend-api
+
+# Jika pertama kali / ada perubahan dependensi:
+composer install
+cp .env.example .env     # pastikan konfigurasi DB sesuai
+php artisan key:generate
+php artisan migrate      # jangan gunakan migrate:fresh / db:wipe
+
+# Jalankan server backend:
+php artisan serve --host=127.0.0.1 --port=8000
+```
+> **Tips:** Biarkan terminal ini tetap terbuka. Jika ingin backend dapat diakses oleh perangkat HP fisik di satu jaringan Wi-Fi, jalankan dengan `--host=0.0.0.0`:
+> `php artisan serve --host=0.0.0.0 --port=8000`
+
+### 3. Menghidupkan Server Website Admin (`admin-web`)
+Website antarmuka admin/panitia menggunakan React + TypeScript + Vite (`http://localhost:3000`):
+```bash
+# Buka jendela terminal baru, lalu pindah ke direktori admin-web:
+cd admin-web
+
+# Pasang dependensi jika belum:
+npm ci
+
+# Jalankan server pengembangan Vite:
+npm run dev
+```
+> **Catatan:** Admin web dikonfigurasi (`vite.config.ts`) untuk otomatis mem-proxy request `/api` dan `/sanctum` langsung ke `http://127.0.0.1:8000`.
+
+### 4. Memverifikasi Server Aktif
+Anda dapat memverifikasi bahwa kedua server telah melayani request:
+- **Backend API:**
+  ```bash
+  curl -i http://127.0.0.1:8000/sanctum/csrf-cookie
+  # Harapan: HTTP/1.1 204 No Content
+  ```
+- **Admin Web:**
+  Buka peramban di [http://localhost:3000](http://localhost:3000) atau jalankan:
+  ```bash
+  curl -i http://localhost:3000
+  # Harapan: HTTP/1.1 200 OK
+  ```
+
+### 5. Akun Login Web Admin (Data Seeder)
+Untuk mengisi atau mereset akun staf (*Admin*, *Panitia*, *Pimpinan*) ke dalam database, jalankan perintah seeder di folder `backend-api`:
+```bash
+cd backend-api
+php artisan db:seed
+```
+Akun login bawaan yang dibuat (dapat disesuaikan di `backend-api/.env`):
+- **Admin:** `admin@example.com` | Password: `admin123` (atau sesuai `SEED_ADMIN_PASSWORD`)
+- **Panitia:** `panitia@example.com` | Password: `panitia123` (atau sesuai `SEED_PANITIA_PASSWORD`)
+- **Pimpinan:** `pimpinan@example.com` | Password: `pimpinan123` (atau sesuai `SEED_PIMPINAN_PASSWORD`)
+
+### 6. Menghentikan Server
+- **Backend & Admin Web:** Tekan `Ctrl + C` pada terminal masing-masing.
+- **Database MySQL:**
+  ```bash
+  docker compose stop db
+  ```
+  *(Penting: Jangan gunakan `docker compose down -v` agar volume data pendaftaran dan akun tidak terhapus).*
+
+---
+
+## Menjalankan Aplikasi Android (`android-app`)
 
 ```bash
-# 1. Database
-cp .env.example .env        # isi MYSQL_PASSWORD dan MYSQL_ROOT_PASSWORD
-chmod 600 .env
-docker compose up -d db
-docker compose ps           # tunggu (healthy)
-
-# 2. Backend
-cd backend-api
-composer install
-cp .env.example .env        # isi DB_* sesuai .env root, lalu:
-php artisan key:generate
-php artisan migrate         # jangan pakai migrate:fresh / db:wipe
-php artisan serve --host=127.0.0.1 --port=8000
-
-# 3. Admin web
-cd admin-web
-npm ci
-npm run dev                 # http://localhost:3000, proxy ke 127.0.0.1:8000
-
-# 4. Android
 cd android-app
 ./gradlew :app:assembleDebug
 # buka folder android-app/ di Android Studio, atau pasang app-debug.apk
 ```
 
-Alamat API: emulator memakai `http://10.0.2.2:8000/api/v1/` (default debug),
-perangkat fisik memakai IP komputer pada jaringan yang sama, produksi memakai
-HTTPS. Lihat `docs/09 - Deployment/Deployment Guide.md` untuk detail.
+Alamat API:
+- **Emulator Android:** memakai `http://10.0.2.2:8000/api/v1/` (alias localhost laptop).
+- **Perangkat Fisik:** ubah `BASE_URL` di `android-app/app/build.gradle.kts` menjadi IP komputer lokal Anda (misal `http://192.168.1.x:8000/api/v1/`), lalu jalankan backend dengan `--host=0.0.0.0`.
+Lihat `docs/09 - Deployment/Deployment Guide.md` untuk detail lengkap.
 
 ## Pengujian
 

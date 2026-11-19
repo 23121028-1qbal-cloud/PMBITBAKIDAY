@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Graduation Cap Top Diamond -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,26 L82,38 L54,50 L26,38 Z" />
+
+    <!-- Cap Base / Band -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,44 L38,53 C38,58 70,58 70,53 L70,44 C65,48 43,48 38,44 Z" />
+
+    <!-- Tassel String and Pendant -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M74,39.5 L80,52 L80,56" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M80,58m-2.5,0a2.5,2.5 0 1,1 5,0a2.5,2.5 0 1,1 -5,0" />
+
+    <!-- Open Book Left Page -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M53,62 C43,59 34,62 31,63 L31,76 C35,74 44,72 53,75 Z" />
+
+    <!-- Open Book Right Page -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M55,62 C65,59 74,62 77,63 L77,76 C73,74 64,72 55,75 Z" />
+
+    <!-- Book Spine Center Line -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M54,60 L54,77" />
+
+    <!-- Academic Star Accent -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,54 L55.5,57 L59,57 L56.2,59 L57.2,62 L54,60 L50.8,62 L51.8,59 L49,57 L52.5,57 Z" />
+</vector>

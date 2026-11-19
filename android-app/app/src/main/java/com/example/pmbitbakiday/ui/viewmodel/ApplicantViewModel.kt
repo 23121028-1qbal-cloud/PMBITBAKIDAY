@@ -179,6 +179,34 @@ class ApplicantViewModel(
                         address = address.trim()
                     )
                 )
+
+                // Otomatis buat pengajuan pendaftaran PMB ke server agar tampil di web admin
+                if (applicationRepository != null) {
+                    val progId = if (studyProgram.contains("Sistem", ignoreCase = true)) 2 else 1
+                    var waveId = _admissionWaves.value.firstOrNull { it.isActive }?.id
+                    if (waveId == null) {
+                        val wavesRes = applicationRepository.getAdmissionWaves()
+                        if (wavesRes is NetworkResult.Success) {
+                            waveId = wavesRes.data.firstOrNull { it.isActive }?.id ?: wavesRes.data.firstOrNull()?.id
+                        }
+                    }
+                    val targetWaveId = waveId ?: 1
+
+                    val currentApp = _myApplication.value
+                    val appId = if (currentApp == null) {
+                        val createRes = applicationRepository.createApplication(targetWaveId, progId)
+                        if (createRes is NetworkResult.Success) {
+                            createRes.data.id
+                        } else null
+                    } else {
+                        currentApp.id
+                    }
+
+                    if (appId != null) {
+                        applicationRepository.submitApplication(appId, expectedStatus = "draft")
+                        loadOnlineData()
+                    }
+                }
             }
 
             val updatedList = applicantDao.getAll()

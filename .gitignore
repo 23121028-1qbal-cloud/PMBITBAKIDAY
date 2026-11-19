@@ -36,3 +36,7 @@ admin-web/tsconfig.tsbuildinfo
 # Operating system noise.
 .DS_Store
 Thumbs.db
+*.bak
+
+# Other assignment folders (excluded from this repo)
+tugas-rest-api-d1/
